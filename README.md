@@ -1,8 +1,24 @@
-# *CLIF Project Title*
+# *In-Hospital Mortality Model for ICU Patients*
 
 ## Objective
 
-*Describe the project objective*
+*Accurate and reliable hospital mortality predictions for critically ill patients may help clinical teams 
+prioritize therapeutic interventions, facilitate more informed shared decision-making around goals of 
+care, and optimize resource allocation within healthcare systems. Existing prediction models are 
+limited by suboptimal accuracy and significant performance variation across hospitals and differential 
+performance among vulnerable populations may exacerbate baseline inequities in access to (and 
+quality of) critical care. In this case study, we developed and externally validated an AI model 
+to predict hospital mortality using clinical data from the first 24 hours in the ICU.  
+ 
+We trained a light gradient boosted machine binary classifier (LightGBM) to predict in-hospital death 
+on separate cohort of ICU admissions in CLIF format from Rush University Medical Center using data 
+from 2019, 2022, and 2023, performing hyperparameter tuning through a grid search with 5-fold cross 
+validation. We selected LightGBM for its high discrimination and its ability to handle missing data 
+without the need for imputation or exclusion of cases with high levels of missingness.24 We selected 
+30 candidate predictors a priori from hours 0-24 in the ICU (Table E2) based on literature review, our 
+clinical experience, and expected low levels of missingness. We then saved the prediction model 
+object in python and the general LGBM TXT format to the shared publicly available consortium 
+repository.*
 
 ## Required CLIF tables and fields
 
