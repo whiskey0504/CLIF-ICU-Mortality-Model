@@ -1,80 +1,53 @@
-# *In-Hospital Mortality Model for ICU Patients*
+# Mortality Model
 
 ## Objective
 
-*Accurate and reliable hospital mortality predictions for critically ill patients may help clinical teams 
-prioritize therapeutic interventions, facilitate more informed shared decision-making around goals of 
-care, and optimize resource allocation within healthcare systems. Existing prediction models are 
-limited by suboptimal accuracy and significant performance variation across hospitals and differential 
-performance among vulnerable populations may exacerbate baseline inequities in access to (and 
-quality of) critical care. In this case study, we developed and externally validated an AI model 
-to predict hospital mortality using clinical data from the first 24 hours in the ICU.  
- 
-We trained a light gradient boosted machine binary classifier (LightGBM) to predict in-hospital death 
-on separate cohort of ICU admissions in CLIF format from Rush University Medical Center using data 
-from 2019, 2022, and 2023, performing hyperparameter tuning through a grid search with 5-fold cross 
-validation. We selected LightGBM for its high discrimination and its ability to handle missing data 
-without the need for imputation or exclusion of cases with high levels of missingness.24 We selected 
-30 candidate predictors a priori from hours 0-24 in the ICU (Table E2) based on literature review, our 
-clinical experience, and expected low levels of missingness. We then saved the prediction model 
-object in python and the general LGBM TXT format to the shared publicly available consortium 
-repository.*
+The Mortality Model is designed to predict patient outcomes using various clinical data points. This document outlines the setup and requirements needed to utilize the model effectively.
 
-## Required CLIF tables and fields
+## RCLIF Tables required
+The following tables from the RCLIF database are required for the Mortality Model. Each table must include the specified fields below: 
 
-Please refer to the online [CLIF data dictionary](https://clif-consortium.github.io/website/data-dictionary.html), [ETL tools](https://github.com/clif-consortium/CLIF/tree/main/etl-to-clif-resources), and [specific table contacts](https://github.com/clif-consortium/CLIF?tab=readme-ov-file#relational-clif) for more information on constructing the required tables and fields. 
+* **patient_demographics** (`encounter_id`, `race`, `ethnicity`, `sex`)
+* **encounter_demographics_dispo** (`encounter_id`, `age_at_admission`, `disposition`)
+* **limited_identifiers** (`encounter_id`, `admission_dttm`)
+* **adt** (`encounter_id`, `location_category`, `in_dttm`, `out_dttm`)
+* **vitals** (`encounter_id`, `recorded_dttm`, `vital_category`, `vital_value`) 
+    * `vital_category` must include `weight_kg`, `pulse`, `sbp`, `dbp`, `temp_c`,`height_inches`
+* **labs** (`encounter_id`, `lab_order_dttm`, `lab_category`, `lab_value`, `lab_type_name`) 
+    * `lab_category` must include  'albumin', 'alkaline_phosphatase', 'ast', 'basophil', 'bilirubin_conjugated', 'bilirubin_total', 'calcium', 'chloride', 'hemoglobin', 'lymphocyte', 'monocyte', 'glucose_serum',  'neutrophil', 'potassium', 'sodium', 'total_protein','platelet count', 'wbc'. 
 
-*List all required tables for the project here, and provide a brief rationale for why they are required.*
+Note- 
+1. Make sure that the `lab_type_name` is correctly labelled as either "standard", "poc", etc. We filter for "standard" labs for this project.
+2. Ensure that all the labs mentioned above are present in your dataset. The model will not run if any of these are missing. 
+4. Please confirm the race and ethnicity mapping for your data is correctly mapped. 
 
-Example:
-The following tables are required:
-1. **patient**: `patient_id`, `race_category`, `ethnicity_category`, `sex_category`
-2. **hospitalization**: `patient_id`, `hospitalization_id`, `admission_dttm`, `discharge_dttm`, `age_at_admission`
-3. **vitals**: `hospitalization_id`, `recorded_dttm`, `vital_category`, `vital_value`
-   - `vital_category` = 'heart_rate', 'resp_rate', 'sbp', 'dbp', 'map', 'resp_rate', 'spo2'
-4. **labs**: `hospitalization_id`, `lab_result_dttm`, `lab_category`, `lab_value`
-   - `lab_category` = 'lactate'
-5. **medication_admin_continuous**: `hospitalization_id`, `admin_dttm`, `med_name`, `med_category`, `med_dose`, `med_dose_unit`
-   - `med_category` = "norepinephrine", "epinephrine", "phenylephrine", "vasopressin", "dopamine", "angiotensin", "nicardipine", "nitroprusside", "clevidipine", "cisatracurium"
-6. **respiratory_support**: `hospitalization_id`, `recorded_dttm`, `device_category`, `mode_category`, `tracheostomy`, `fio2_set`, `lpm_set`, `resp_rate_set`, `peep_set`, `resp_rate_obs`
 
-## Cohort identification
-*Describe study cohort inclusion and exclusion criteria here*
+## Setup instructions
 
-## Expected Results
+### Direct Package Installation 
 
-*Describe the output of the analysis. The final project results should be saved in the [`output/final`](output/README.md) directory.*
-
-## Detailed Instructions for running the project
-
-## 1. Update `config/config.json`
-Follow instructions in the [config/README.md](config/README.md) file for detailed configuration steps.
-
-**Note: if using the `01_run_cohort_id_app.R` file, this step is not necessary as the app will create the config file for the user**
-
-## 2. Set up the project environment
-
-*Describe the steps to setup the project environment.*
-
-Example for R:
-Run `00_renv_restore.R` in the [code](code/templates/R) to set up the project environment
-
-Example for Python:
-Open your terminal and run the following commands:
+If you don't want to create a virtual env, you can run the below command in the terminal or jupyter notebook. 
 ```
-python3 -m venv .mobilization
-source .mobilization/bin/activate
-pip install -r requirements.txt 
+!{sys.executable} -m pip install pandas numpy scikit-learn lightgbm matplotlib duckdb 
 ```
 
-## 3. Run code
+### Creating and Activating a Virtual Environment and RUN!!!!!!!
+Follow these steps to create a virtual environment.
+1. In the Mortality_Model directory, Open terminal & run the `setup_mortality_model.sh`(mac) or `setup_mortality_model.bat` (win) script in terminal to set up a virtual environment for this project. 
+    Mac Setup: 
+    ```
+        chmod +x setup_mortality_model.sh
+        ./setup_mortality_model.sh
+     ```
+   Win Setup
+     ```
+        ./setup_mortality_model.bat
+     ```
+2.  Activate the virtual environment by running the below command in the terminal
+    ```
+    source .mortality_model/bin/activate
+    ```
+3. Select the new kernel `Python (mortality_model)` in your Jupyter notebook.
 
-Detailed instructions on the code workflow are provided in the [code directory](code/README.md)
-
-## Example Repositories
-* [CLIF Adult Sepsis Events](https://github.com/08wparker/CLIF_sepsis) for R
-* [CLIF Eligibility for mobilization](https://github.com/kaveriC/CLIF-eligibility-for-mobilization) for Python
-* [CLIF Variation in Ventilation](https://github.com/ingra107/clif_vent_variation)
----
-
+Ready to run the Inference_py/Inference_R notebook to run the model (Avaliable in .pkl, .json & .txt )! 
 

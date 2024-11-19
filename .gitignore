@@ -17,7 +17,7 @@ initialize_renv.R
 CLIF_*.parquet
 CLIF_*.csv
 CLIF_*.fst
-
+*.csv
 #ignore the identifier app
 CLIF_cohort_identifier*
 
