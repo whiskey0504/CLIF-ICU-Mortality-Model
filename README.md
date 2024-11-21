@@ -28,7 +28,7 @@ Note-
 
 #### for Python 
 Follow these steps to create a virtual environment.
-1. In the Mortality_Model directory, Open terminal & run the `setup_mortality_model.sh`(mac) or `setup_mortality_model.bat` (win) script in terminal to set up a virtual environment for this project. 
+1. Open terminal & run the `setup_mortality_model.sh`(mac) or `setup_mortality_model.bat` (win) script in terminal to set up a virtual environment for this project. 
     Mac Setup: 
     ```
         chmod +x setup_mortality_model.sh
