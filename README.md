@@ -24,14 +24,9 @@ Note-
 
 ## Setup instructions
 
-### Direct Package Installation 
-
-If you don't want to create a virtual env, you can run the below command in the terminal or jupyter notebook. 
-```
-!{sys.executable} -m pip install pandas numpy scikit-learn lightgbm matplotlib duckdb 
-```
-
 ### Creating and Activating a Virtual Environment and RUN!!!!!!!
+
+#### for Python 
 Follow these steps to create a virtual environment.
 1. In the Mortality_Model directory, Open terminal & run the `setup_mortality_model.sh`(mac) or `setup_mortality_model.bat` (win) script in terminal to set up a virtual environment for this project. 
     Mac Setup: 
@@ -49,5 +44,8 @@ Follow these steps to create a virtual environment.
     ```
 3. Select the new kernel `Python (mortality_model)` in your Jupyter notebook.
 
-Ready to run the Inference_py/Inference_R notebook to run the model (Avaliable in .pkl, .json & .txt )! 
+Choose the appropriate script based on CLIF version you have. Run the Inference_py notebook to execute the model (supports .pkl, .json, and .txt). Outputs are saved in the script's directory.
 
+#### for R
+
+Set your RStudio directory to the root of the Git repo. Select the script matching your CLIF version. Run Inference_r_script to execute the model (supports .pkl, .json, and .txt). Outputs are saved in the project root folder.
