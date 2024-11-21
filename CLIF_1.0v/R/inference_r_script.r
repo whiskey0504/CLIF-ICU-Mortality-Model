@@ -1,4 +1,4 @@
-packages <- c("duckdb", "lubridate", "tidyverse", "dplyr", "readr", "arrow", "fst", "lightgbm", "caret", "Metrics", "ROCR", "pROC", "ggplot2","PRROC", "reshape2")
+packages <- c("jsonlite","duckdb", "lubridate", "tidyverse", "dplyr", "readr", "arrow", "fst", "lightgbm", "caret", "Metrics", "ROCR", "pROC", "ggplot2","PRROC", "reshape2")
 
 install_if_missing <- function(package) {
   if (!require(package, character.only = TRUE)) {
@@ -11,9 +11,28 @@ sapply(packages, install_if_missing)
 
 con <- duckdb::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
 
-tables_location <- "C:/Users/vchaudha/OneDrive - rush.edu/CLIF-1.0-main" 
+
+load_config <- function() {
+  json_path <- file.path( "config.json")
+  
+  if (file.exists(json_path)) {
+    config <- fromJSON(json_path)
+    print("Loaded configuration from config.json")
+  } else {
+    stop("Configuration file not found. Please create config.json based on the config_template.")
+  }
+  
+  return(config)
+}
+
+# Load the configuration
+config <- load_config()
+
+
+
+tables_location <- config$clif1_path
 site <-'RUSH'
-file_type <- '.csv'
+file_type <- paste0(".", config$filetype)
 
 # Check if the output directory exists; if not, create it
 if (!dir.exists("output")) {
@@ -33,10 +52,10 @@ read_data <- function(file_path) {
 }
 
 # Read data using the function and assign to variables
-location <- read_data(paste0(tables_location, "/rclif/clif_adt", file_type))
-encounter <- read_data(paste0(tables_location, "/rclif/clif_encounter_demographics_dispo_clean", file_type))
-limited <- read_data(paste0(tables_location, "/rclif/clif_limited_identifiers", file_type))
-demog <- read_data(paste0(tables_location, "/rclif/clif_patient_demographics", file_type))
+location <- read_data(paste0(tables_location, "/clif_adt", file_type))
+encounter <- read_data(paste0(tables_location, "/clif_encounter_demographics_dispo_clean", file_type))
+limited <- read_data(paste0(tables_location, "/clif_limited_identifiers", file_type))
+demog <- read_data(paste0(tables_location, "/clif_patient_demographics", file_type))
 
 # First join operation
 join <- location %>%
@@ -173,8 +192,9 @@ icu_data$ICU_stay_hrs <- as.numeric(difftime(icu_data$max_out_dttm, icu_data$min
 
 rm( encounter, limited, demog)
 gc()  # invokes garbage collection
-### vitals
-vitals <- read_data(paste0(tables_location, "/rclif/clif_vitals_clean", file_type))
+
+### vitals #######################################################################################
+vitals <- read_data(paste0(tables_location, "/clif_vitals_clean", file_type))
 duckdb_register(con, "vitals", vitals)
 duckdb_register(con, "icu_data", icu_data)
 vitals <- dbGetQuery(con, "SELECT 
@@ -247,7 +267,7 @@ duckdb_unregister(con, "icu_data_agg")
 rm(icu_data_agg,pivoted_data)
 gc()  # invokes garbage collection
 ### labs
-labs <- read_data(paste0(tables_location, "/rclif/clif_labs_clean", file_type))
+labs <- read_data(paste0(tables_location, "/clif_labs_clean", file_type))
 duckdb_register(con, "labs", labs)
 labs <- dbGetQuery(con, "
  SELECT 
@@ -319,6 +339,7 @@ gc()
 ### Model
 dim(icu_data)
 
+
 model_col <- c('isfemale', 'age', 'min_bmi', 'max_bmi', 'avg_bmi',
                'min_weight_kg', 'max_weight_kg', 'avg_weight_kg', 'min_pulse',
                'max_pulse', 'avg_pulse', 'min_sbp', 'max_sbp', 'avg_sbp', 'min_dbp',
@@ -342,7 +363,7 @@ model_col <- c('isfemale', 'age', 'min_bmi', 'max_bmi', 'avg_bmi',
                'total_protein_mean', 'wbc_min', 'wbc_max', 'wbc_mean')
 
 
-model_file_path <- sprintf("%s/projects/Mortality_model/models/lgbm_model_20240628-092136.txt", tables_location)
+model_file_path <- "icu_mortality_model/models/lgbm_model_20240628-092136.txt"
 
 # Load the model
 model <- lgb.load(model_file_path)
@@ -394,17 +415,16 @@ write.csv(data_summary_t, sprintf("output/imp_features_split_stats_%s.csv", site
 
 
 data_summary_t
-
 # Important features list
-imp_features_gain <- c(
-  "albumin_min", "min_pulse", "ast_mean", "sodium_max", "age", "min_dbp", 
-  "min_sbp", "max_pulse", "avg_temp_c", "ast_max", "max_temp_c", "max_sbp", 
-  "platelet_count_min", "min_temp_c", "glucose_serum_min", "glucose_serum_max", 
-  "wbc_mean", "wbc_min", "albumin_mean", "glucose_serum_mean"
+imp_features_split <- c(
+  "age", "min_pulse", "max_pulse", "max_temp_c", "max_sbp", "glucose_serum_min",
+  "avg_temp_c", "sodium_max", "min_dbp", "platelet_count_min", "min_temp_c",
+  "min_sbp", "avg_sbp", "avg_pulse", "wbc_min", "glucose_serum_mean",
+  "alkaline_phosphatase_max", "hemoglobin_min", "ast_max", "avg_dbp"
 )
 
-# Unstack the data
-data_unstack <- melt(icu_data[imp_features_gain], variable.name = 'imp_features_gain', value.name = 'value')
+# Assuming icu_data is your data frame and output_directory, site_name are defined
+data_unstack <- melt(icu_data[imp_features_split], variable.name = 'imp_features_split', value.name = 'value')
 
 # Generate and display the histograms
 generate_facetgrid_histograms(data_unstack, 'imp_features_gain', 'value')
@@ -755,3 +775,27 @@ legend('bottomright', legend = paste('ROC curve (area =', round(roc_auc, 2), ')'
 
 plot(pr_obj$curve[,1], pr_obj$curve[,2], type = 'l', col = 'blue', lwd = 2, xlab = 'Recall', ylab = 'Precision', main = 'Precision-Recall (PR) Curve')
 legend('bottomleft', legend = paste('PR curve (area =', round(pr_auc, 2), ')'), col = 'blue', lwd = 2)
+
+
+## missing %
+
+# Assuming icu_data is already loaded, select the desired columns
+df <- icu_data[, model_col]
+
+# Calculate the number of NA values, total rows, and percentage of NA values for each column
+nan_counts <- colSums(is.na(df)) # Number of NA values
+total_rows <- nrow(df)           # Total number of rows
+nan_percentage <- nan_counts / total_rows * 100
+
+# Create a new data frame with the results
+nan_percentage_df <- data.frame(
+  Column = names(nan_counts),
+  NA_Count = nan_counts,
+  Total_Rows = total_rows,
+  NaN_Percentage = nan_percentage,
+  site = site
+)
+write.csv(nan_percentage_df, file = paste0("output/features_missing_%", site, '.csv') , row.names = FALSE)
+
+# Clean up
+rm(df)
