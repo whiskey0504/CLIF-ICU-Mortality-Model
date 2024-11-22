@@ -1,4 +1,4 @@
-packages <- c("duckdb", "lubridate", "tidyverse", "dplyr","table1",'rvest', "readr", "arrow", "fst", "lightgbm", "caret", "Metrics", "ROCR", "pROC")
+packages <- c("jsonlite", "duckdb", "lubridate", "tidyverse", "dplyr","table1",'rvest', "readr", "arrow", "fst", "lightgbm", "caret", "Metrics", "ROCR", "pROC")
 
 install_if_missing <- function(package) {
   if (!require(package, character.only = TRUE)) {
@@ -11,9 +11,28 @@ sapply(packages, install_if_missing)
 
 con <- duckdb::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
 
-tables_location <- 'C:/Users/vchaudha/OneDrive - rush.edu/CLIF-1.0-main'
+load_config <- function() {
+  json_path <- file.path( "config.json")
+  
+  if (file.exists(json_path)) {
+    config <- fromJSON(json_path)
+    print("Loaded configuration from config.json")
+  } else {
+    stop("Configuration file not found. Please create config.json based on the config_template.")
+  }
+  
+  return(config)
+}
+
+# Load the configuration
+config <- load_config()
+
+
+
+tables_location <- config$clif2_path
 site <-'RUSH'
-file_type <- '.csv'
+file_type <- paste0(".", config$filetype)
+
 
 # Check if the output directory exists; if not, create it
 if (!dir.exists("output")) {
@@ -32,22 +51,41 @@ read_data <- function(file_path) {
   }
 }
 
-# Read data using the function and assign to variables
-location <- read_data(paste0(tables_location, "/rclif/clif_adt", file_type))
-encounter <- read_data(paste0(tables_location, "/rclif/clif_encounter_demographics_dispo_clean", file_type))
-limited <- read_data(paste0(tables_location, "/rclif/clif_limited_identifiers", file_type))
-demog <- read_data(paste0(tables_location, "/rclif/clif_patient_demographics", file_type))
-ventilator <- read_data(paste0(tables_location, "/rclif/clif_respiratory_support", file_type))
 
+# Read data using the function and assign to variables
+location <- read_data(paste0(tables_location, "/clif_adt", file_type))
+encounter <- read_data(paste0(tables_location, "/clif_hospitalization", file_type))
+demog <- read_data(paste0(tables_location, "/clif_patient", file_type))
+ventilator <- read_data(paste0(tables_location, "/clif_respiratory_support", file_type))
+
+# Rename columns in the location data frame
+location <- location %>%
+  rename(encounter_id = hospitalization_id)
+
+# Rename columns in the encounter data frame
+encounter <- encounter %>%
+  rename(encounter_id = hospitalization_id)
+
+# Rename columns in the demog data frame
+demog <- demog %>%
+  rename(
+    race = race_category,
+    ethnicity = ethnicity_category,
+    sex = sex_category
+  )
+
+ventilator <- ventilator %>%
+  rename(
+    encounter_id = hospitalization_id
+  )
 
 # First join operation
 join <- location %>%
-  select(encounter_id, location_category, in_dttm, out_dttm) %>%
-  left_join(limited %>% select(encounter_id, admission_dttm), by = "encounter_id")
+  select(encounter_id, location_category, in_dttm, out_dttm)
 
 # Second join operation to get 'icu_data'
 icu_data <- join %>%
-  left_join(encounter %>% select(encounter_id, age_at_admission, disposition_category), by = "encounter_id") %>%
+  left_join(encounter %>% select(patient_id, encounter_id, age_at_admission, discharge_category,admission_dttm), by = "encounter_id") %>%
   mutate(
     admission_dttm = ymd_hms(admission_dttm), # Convert to POSIXct, adjust the function as per your date format
     in_dttm = ymd_hms(in_dttm), # Convert to POSIXct, adjust the function as per your date format
@@ -55,6 +93,9 @@ icu_data <- join %>%
   )
 
 # Filter rows where location is ICU and in_dttm is within 48 hours of admission_dttm
+icu_data <- icu_data %>%
+  mutate(location_category = ifelse(location_category == "procedural", "OR", location_category)) %>%
+  mutate(location_category = toupper(location_category))
 
 icu_48hr_check <- icu_data %>%
   filter(location_category == "ICU",
@@ -103,13 +144,13 @@ icu_data <- icu_data %>%
   ungroup()
 
 icu_data <- icu_data %>%
-  group_by(encounter_id, location_category, group_id) %>%
+  group_by(patient_id , encounter_id, location_category, group_id) %>%
   summarize(
     min_in_dttm = min(in_dttm),
     max_out_dttm = max(out_dttm),
     admission_dttm = first(admission_dttm),
     age = first(age_at_admission),
-    dispo = first(disposition_category),
+    dispo = first(discharge_category),
     .groups = 'drop'
   )
 
@@ -134,15 +175,15 @@ icu_data <- icu_data %>%
 
 # Select specific columns
 icu_data <- icu_data %>%
-  select(encounter_id, min_in_dttm, after_24hr,max_out_dttm, age, dispo)
+  select(patient_id, encounter_id, min_in_dttm, after_24hr,max_out_dttm, age, dispo)
 
 # Merge with demographic data and select specific columns
 icu_data <- icu_data %>%
-  left_join(demog, by = "encounter_id") %>%
+  left_join(demog, by = "patient_id") %>%
   select(encounter_id, min_in_dttm, after_24hr,max_out_dttm, age, dispo, sex, ethnicity, race)
 
 ventilator <- ventilator %>%
-  filter(device_category =="Vent")%>%
+  filter(device_category =="IMV")%>%
   select(encounter_id) %>% distinct() %>% deframe()
 
 
@@ -186,7 +227,7 @@ icu_data <- icu_data %>%
 # Calculate the difference in hours
 icu_data$ICU_stay_hrs <- as.numeric(difftime(icu_data$max_out_dttm, icu_data$min_in_dttm, units = "secs")) / 3600
 
-write.csv(icu_data, paste0(tables_location, "/projects/Mortality_model/output/ICU_cohort", '.csv'), row.names = FALSE)
+write.csv(icu_data, paste0( "output/ICU_cohort", '.csv'), row.names = FALSE)
 
 
 # HTML content (make sure your actual HTML string is correctly input here)
@@ -201,4 +242,4 @@ df <- table[[1]]
 
 # Rename 'Overall(N=14598)' to 'fabc(N=14598)' using the site variable
 names(df) <- gsub("Overall\\(N=(\\d+)\\)", paste0(site, ' ', "(N=\\1)"), names(df))
-write.csv(df, paste0(tables_location, "/projects/Mortality_model/output/table1_",site, '.csv'), row.names = FALSE)
+write.csv(df, paste0( "output/table1_",site, '.csv'), row.names = FALSE)
