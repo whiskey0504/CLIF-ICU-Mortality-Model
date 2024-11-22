@@ -49,3 +49,8 @@ Choose the appropriate script based on CLIF version you have. Run the Inference_
 #### for R
 
 Set your RStudio directory to the root of the Git repo. Select the script matching your CLIF version. Run Inference_r_script to execute the model (supports .pkl, .json, and .txt). Outputs are saved in the project root folder.
+
+
+#### Run Table 1 & Temp Trajectory cohort 
+
+Run the ICU_cohort_id_script - CLIF *.*.R to generate table 1 and cohort dataset for Temp trajectory project.
