@@ -1,5 +1,6 @@
 {
     "clif1_path": "C:/Users/vchaudha/Downloads/CLIF-1.0-main/rclif",
     "clif2_path": "C:/Users/vchaudha/Downloads/ATS2024/RUSH_CLIF",
-    "filetype": "csv"
+    "filetype": "csv",
+    "site": "RUSH"
 }

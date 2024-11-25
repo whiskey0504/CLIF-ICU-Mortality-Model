@@ -26,6 +26,8 @@ Note-
 
 ### Creating and Activating a Virtual Environment and RUN!!!!!!!
 
+First Pull the repo and update the config.json with the path to your tables & update site name
+
 #### for Python 
 Follow these steps to create a virtual environment.
 1. Open terminal & run the `setup_mortality_model.sh`(mac) or `setup_mortality_model.bat` (win) script in terminal to set up a virtual environment for this project. 

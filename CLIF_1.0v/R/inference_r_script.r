@@ -31,7 +31,7 @@ config <- load_config()
 
 
 tables_location <- config$clif1_path
-site <-'RUSH'
+site <-config$site
 file_type <- paste0(".", config$filetype)
 
 # Check if the output directory exists; if not, create it
