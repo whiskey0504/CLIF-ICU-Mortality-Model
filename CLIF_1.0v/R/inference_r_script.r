@@ -415,16 +415,18 @@ write.csv(data_summary_t, sprintf("output/imp_features_split_stats_%s.csv", site
 
 
 data_summary_t
+
 # Important features list
-imp_features_split <- c(
-  "age", "min_pulse", "max_pulse", "max_temp_c", "max_sbp", "glucose_serum_min",
-  "avg_temp_c", "sodium_max", "min_dbp", "platelet_count_min", "min_temp_c",
-  "min_sbp", "avg_sbp", "avg_pulse", "wbc_min", "glucose_serum_mean",
-  "alkaline_phosphatase_max", "hemoglobin_min", "ast_max", "avg_dbp"
+imp_features_gain <- c(
+  "albumin_min", "min_pulse", "ast_mean", "sodium_max", "age", "min_dbp", 
+  "min_sbp", "max_pulse", "avg_temp_c", "ast_max", "max_temp_c", "max_sbp", 
+  "platelet_count_min", "min_temp_c", "glucose_serum_min", "glucose_serum_max", 
+  "wbc_mean", "wbc_min", "albumin_mean", "glucose_serum_mean"
 )
 
+
 # Assuming icu_data is your data frame and output_directory, site_name are defined
-data_unstack <- melt(icu_data[imp_features_split], variable.name = 'imp_features_split', value.name = 'value')
+data_unstack <- melt(icu_data[imp_features_gain], variable.name = 'imp_features_split', value.name = 'value')
 
 # Generate and display the histograms
 generate_facetgrid_histograms(data_unstack, 'imp_features_gain', 'value')
