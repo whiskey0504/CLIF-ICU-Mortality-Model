@@ -30,7 +30,7 @@ config <- load_config()
 
 
 tables_location <- config$clif2_path
-site <-'RUSH'
+site <-config$site
 file_type <- paste0(".", config$filetype)
 
 
