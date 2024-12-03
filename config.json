@@ -1,6 +1,6 @@
 {
     "clif1_path": "C:/Users/vchaudha/Downloads/CLIF-1.0-main/rclif",
-    "clif2_path": "C:/Users/vchaudha/Downloads/ATS2024/RUSH_CLIF",
-    "filetype": "csv",
-    "site": "RUSH"
+    "clif2_path": "/gpfs/data/healthcare-allocate/CLIF-MIMIC/rclif",
+    "filetype": "parquet",
+    "site": "MIMIC"
 }
